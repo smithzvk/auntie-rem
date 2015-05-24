@@ -1,0 +1,48 @@
+* Installation
+  I've added =link-grammar= as a submodule to this repository. To fetch its
+  sources you'll need to:
+  #+begin_src sh
+    git submodule init
+    git submodule update
+  #+end_src
+  after you've cloned the repository.
+  
+** Building =link-grammar=
+   1. Make sure you've fetched the submodules from this repo.
+   2. You will need =SWIG= library installed to compile Python bindings.
+   3. This should get the project compiled and installed.  Read the notes after
+      the code before you run it.
+      #+begin_src sh
+        cd ./link-grammar
+        ./autogen.sh
+        ./configure --enable-python-bindings \
+                    --prefix=../bin \
+                    --includedir=../includes
+        make
+        make install
+      #+end_src
+      On my machine, even after =SWIG= is installed, the =link-grammar= misses
+      the =ax_pkg_swig.m4= macro definition file.  In case you need it, I've
+      copied it to [[./ext/ax_pkg_swig.m4]].  You will need to copy it to
+      [[./link-grammar/m4]] directory.
+
+** Installing Python dependencies
+   There's a file [[./requirements.txt]] which lists all dependencies for this
+   project.  Run
+   #+begin_src sh
+     pip install -r ./requirements.txt
+   #+end_src
+   to install those.
+
+* Running
+  I've added a simple configuration file [[./etc/ngircd.conf]] for =ngircd=
+  (this should be available from the package manager).  To run it:
+  #+begin_src sh
+    ngircd -f /etc/ngircd.conf
+  #+end_src
+  After that, connect to the server from, ERC for example and create a
+  channel =#testing=. Once that is done, you can run the bot by doing:
+  #+begin_src sh
+    cd ./auntie-rem
+    ./testbot.py localhost '#testing' bot
+  #+end_src
