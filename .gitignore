@@ -4,3 +4,5 @@
 /lib64
 /pip-selfcheck.json
 *~
+/includes/
+/share/

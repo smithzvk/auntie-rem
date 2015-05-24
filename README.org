@@ -16,15 +16,23 @@
         cd ./link-grammar
         ./autogen.sh
         ./configure --enable-python-bindings \
-                    --prefix=../bin \
-                    --includedir=../includes
+                    --prefix=$(readlink -f ..) \
+                    --includedir=$(readlink -f ../includes)
         make
         make install
       #+end_src
-      On my machine, even after =SWIG= is installed, the =link-grammar= misses
-      the =ax_pkg_swig.m4= macro definition file.  In case you need it, I've
-      copied it to [[./ext/ax_pkg_swig.m4]].  You will need to copy it to
+      On my machine, even after =SWIG= is installed, the
+      =link-grammar= misses the =ax_pkg_swig.m4= macro definition
+      file.  In case you need it, I've copied it to
+      [[./etc/ax_pkg_swig.m4]].  The same goes for
+      [[./etc/ax_python_devel.m4]].  You will need to copy them to
       [[./link-grammar/m4]] directory.
+
+      Before you run =make install= you will also need to edit the
+      [[./link-grammar/bindings/Makefile]]: search for mentions of Perl and remove
+      them.  There are two places all in all.  First is where =SUBDIRS= is
+      defined, remove the =$(am__append_3)= bit.  Another one is where
+      =DIST_SUBDIRS= is defined, remove =perl= from it.
 
 ** Installing Python dependencies
    There's a file [[./requirements.txt]] which lists all dependencies for this
