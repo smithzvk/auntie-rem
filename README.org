@@ -54,3 +54,45 @@
     cd ./auntie-rem
     ./testbot.py localhost '#testing' bot
   #+end_src
+
+** Running PostgresQL
+   First, you will need to install it, of course.  Once that is done, you
+   will need to intialize [[./pg]] directory to be the data directoy:
+   #+begin_src sh
+     initdb ./pg
+   #+end_src
+   Notice that you will need to restore [[./pg/postgresql.conf]] file after you
+   intialized the database (but you will only need to do this once).
+   start the server, for example:
+   #+begin_src sh
+     postgres -D ./pg
+   #+end_src
+   Notice that I had to make a modification to [[./pg/postgresql.conf]] to specify
+   the directory where the database creates a lock file (by default it tries
+   to create it in =/var/run/postgresql= which requires elevated permissions to
+   access.  This also means that whenever you run other Postgres utilities, you
+   will need to specify this directory too, for example, to start the Postgres
+   command-line client you would need to:
+   #+begin_src sh
+     psql -h /tmp -U auntie
+   #+end_src
+   I've also created a user and a database:
+
+   | user   | database   | password        |
+   |--------+------------+-----------------|
+   | auntie | auntie-rem | auntie-password |
+
+   This is the one that will be used by the application, but you can, of course
+   add your own user.
+
+   After you are done working with the database:
+   #+begin_src sh
+     pg_dumpall -U auntie -h /tmp -f ./pg/db.sql
+     tar -zcf ./pg/db.tar.gz ./pg/db.sql --remove-files
+   #+end_src
+
+   You should be able to import this database later with:
+   #+begin_src sh
+     tar -x ./pg/db.tar.gz
+     psql -h /tmp -d auntie-rem -U auntie -f ./pg/db.sql
+   #+end_src

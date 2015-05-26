@@ -6,3 +6,17 @@
 *~
 /includes/
 /share/
+/pg/PG_VERSION
+/pg/pg_hba.conf
+/pg/pg_ident.conf
+/pg/postmaster.opts
+/pg/postmaster.pid
+pg/base/*
+pg/global/*
+pg/pg_clog/*
+pg/pg_log/*
+pg/pg_multixact/*
+pg/pg_notify/*
+pg/pg_stat_tmp/*
+pg/pg_subtrans/*
+pg/pg_xlog/*
