@@ -1,18 +1,19 @@
-#!/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import re
-from datetime import datetime
+import requests
+import logging
 
-from sqlalchemy import create_engine, Column, Integer, String, Sequence, ForeignKey, DateTime
+from datetime import datetime
+from sqlalchemy import create_engine, Column, Integer, String, Sequence, ForeignKey, DateTime, and_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from lxml.html import parse as html_parse
-import requests
+from optparse import OptionParser, OptionGroup
+from IPython import embed;
 
-engine = create_engine('postgresql://auntie:auntie-password@localhost:5432/auntie-rem')
-Session = sessionmaker(bind = engine)
-session = Session()
+session = None
 Base = declarative_base()
 
 class User(Base):
@@ -23,6 +24,13 @@ class User(Base):
 
     def __repr__(self):
        return '<user %s>' % self.nick
+
+    def is_online_at(self, ts):
+        previous = session.query(Message).filter_by(
+            and_(Message.nick == self.nick, Message.ts < ts)).\
+            order_by(Message.ts.asc()).first()
+        return not re.match(r'quit', previous.command or '')
+                                             
 
 class Message(Base):
     __tablename__ = 'messages'
@@ -45,10 +53,10 @@ class Message(Base):
 
 # References to self aren't possible from inside the class definition...
 Message.cause_id = Column(Integer, ForeignKey(Message.id))
-Message.in_response_to = relationship(Message, backref='messages',
+Message.in_response_to = relationship(Message, backref = 'messages',
     remote_side = Message.id)
 
-Base.metadata.create_all(engine)
+
 
 def find_or_create_user(nick):
     user = session.query(User).filter_by(nick = nick).first()
@@ -87,11 +95,24 @@ def clean_lines(content):
             begin = end
             yield line
 
-def populate():
-    logs = html_parse('http://tunes.org/~nef/logs/lisp/')
+def start_engine(options):
+    global session
+    connection = 'postgresql://%s:%s@%s:%s/%s' % \
+                 (options.user, options.password, options.host,
+                  options.port, options.database)
+    logging.info('Connecting with: \'%s\'' % connection)
+    engine = create_engine(connection)
+    Session = sessionmaker(bind = engine)
+    session = Session()
+    Base.metadata.create_all(engine)
+
+def populate(options):
+    start_engine(options)
+    logs = html_parse(options.url)
     archives = logs.xpath('//td/a/text()')
     for arch in archives:
         if re.match(r'\d\d\.\d\d\.\d\d', arch):
+            
             print 'will import http://tunes.org/~nef/logs/lisp/%s' % arch
             log_file = requests.get('http://tunes.org/~nef/logs/lisp/%s' % arch)
             date = [int(x) for x in arch.split('.')]
@@ -99,6 +120,47 @@ def populate():
                             for line in clean_lines(log_file.content))
     session.commit()
                 
-
+def test(options):
+    start_engine(options)
+    embed()
+    
 if __name__ == '__main__':
-    populate()
+    parser = OptionParser(usage = 'Usage: split-swc.py [options] <swc, swf or xml>')
+    'postgresql://auntie:auntie-password@localhost:5432/auntie-rem'
+    def check_format(option, opt_str, value, parser, *args, **kwargs):
+        if not value in ['swf', 'swc']:
+            parser.error('Supported formats are swf and swc.')
+    group = OptionGroup(parser, 'Database options',
+                        'These optins manage connection to the database.')
+    group.add_option('-p', '--port', dest = 'port', default = 5432,
+                     help = 'Port where Postgresql server listens.')
+    group.add_option('-u', '--user', dest = 'user', default = 'auntie',
+                     help = 'Postgresql user.')
+    group.add_option('-d', '--database', dest = 'database', default = 'auntie-rem',
+                     help = 'Postgresql database to connect to.')
+    group.add_option('-s', '--server-host', dest = 'host', default = 'localhost',
+                     help = 'Host running the Postgresql server.')
+    group.add_option('-w', '--password', dest = 'password', default = 'auntie-password',
+                     help = 'Postgresql connection password.')
+    parser.add_option_group(group)
+    parser.add_option(
+        '-l', '--logs-url', dest = 'url', default = 'http://tunes.org/~nef/logs/lisp/',
+        help = 'URL to fetch the logs from (this option is incompatible with --test)')
+    parser.add_option(
+        '-t', '--test', dest = 'test', action = 'store_true', default = False,
+        help = 'Instruct the script to start an interactive session.')
+    parser.add_option(
+        '-v', '--verbose', dest = 'verbose', action = 'count',
+        help = 'Increase verbosity (specify multiple times for more)')
+    options, args = parser.parse_args()
+
+    log_level = logging.WARNING
+    if options.verbose == 1:
+        log_level = logging.INFO
+    elif options.verbose >= 2:
+        log_level = logging.DEBUG
+
+    logging.basicConfig(level = log_level)
+
+    if options.test: test(options)
+    else: populate(options)

@@ -20,3 +20,4 @@ pg/pg_notify/*
 pg/pg_stat_tmp/*
 pg/pg_subtrans/*
 pg/pg_xlog/*
+pg/db.tar.gz

@@ -35,12 +35,21 @@
       =DIST_SUBDIRS= is defined, remove =perl= from it.
 
 ** Installing Python dependencies
-   There's a file [[./requirements.txt]] which lists all dependencies for this
-   project.  Run
+   There's a file [[./requirements.txt]] which lists all dependencies for
+   this project.  Before you can run it, you will need to make sure
+   that you have the headers needed to build =lxml= package.  You will
+   also need Postgresql headers.  This is unfortunate because =pip=,
+   cannot install binary packages. So, for example, you could run:
+   #+begin_src sh
+     dnf install libxml2-devel libxslt-devel postgresql-devel
+   #+end_src
+   or use your favourite package manager.
+   
+   Then, run
    #+begin_src sh
      pip install -r ./requirements.txt
    #+end_src
-   to install those.
+   to install the rest.
 
 * Running
   I've added a simple configuration file [[./etc/ngircd.conf]] for =ngircd=
@@ -96,3 +105,29 @@
      tar -x ./pg/db.tar.gz
      psql -h /tmp -d auntie-rem -U auntie -f ./pg/db.sql
    #+end_src
+
+** Running the interactive console
+   You can run this script interactively to examine the contents of the database.
+   To do this, start the script giving it =--test= argument:
+   #+begin_src sh
+     ./log_import.py -t
+   #+end_src
+   This will launch =IPython= console.  Here you can do things like:
+   #+begin_example
+     In [1]: first_user = session.query(User).first()
+
+     In [2]: first_user?
+     Type:           User
+     String form:    <user ukari>
+     File:           ~/Projects/auntie-rem/auntie-rem/log_import.py
+     Docstring:      <no docstring>
+     Init docstring:
+     A simple constructor that allows initialization from kwargs.
+
+     Sets attributes on the constructed instance using the names and
+     values in ``kwargs``.
+
+     Only keys that are present as
+     attributes of the instance's class are allowed. These could be,
+     for example, any mapped columns or relationships.
+   #+end_example
